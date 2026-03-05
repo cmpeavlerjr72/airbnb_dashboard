@@ -45,7 +45,22 @@ export default function RevenueProjector({ bookings }) {
         current.setMonth(current.getMonth() + 1);
       }
     });
-    return [...monthSet.values()].sort((a, b) => a.year - b.year || a.month - b.month);
+
+    // Compute ADR for each month
+    return [...monthSet.values()]
+      .sort((a, b) => a.year - b.year || a.month - b.month)
+      .map(m => {
+        let earnings = 0;
+        let nights = 0;
+        bookings.forEach(b => {
+          const n = nightsInMonth(b.startDate, b.endDate, m.year, m.month);
+          if (n > 0) {
+            earnings += b.grossEarnings * (n / totalBookingNights(b));
+            nights += n;
+          }
+        });
+        return { ...m, adr: nights > 0 ? earnings / nights : 0 };
+      });
   }, [bookings]);
 
   const activeMonth = selectedMonth || months[0] || null;
@@ -121,7 +136,8 @@ export default function RevenueProjector({ bookings }) {
               className={`projector-month-btn ${isActive ? 'active' : ''}`}
               onClick={() => setSelectedMonth(m)}
             >
-              {MONTH_NAMES[m.month]} {m.year}
+              <span>{MONTH_NAMES[m.month]} {m.year}</span>
+              <span className="projector-month-adr">{fmt(m.adr)}/nt</span>
             </button>
           );
         })}
