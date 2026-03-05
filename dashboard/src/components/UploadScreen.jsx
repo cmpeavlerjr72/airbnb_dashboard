@@ -1,17 +1,10 @@
 import { useState, useCallback, useRef } from 'react';
 import { parseCsv, guessPropertyName } from '../utils/parseCsv';
-import { fetchIcal, parseIcal } from '../utils/parseIcal';
 
 export default function UploadScreen({ onDataReady }) {
   const [files, setFiles] = useState([]); // [{ name, propertyName, bookingCount, bookings }]
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef();
-
-  // iCal state
-  const [icalUrl, setIcalUrl] = useState('');
-  const [icalProperty, setIcalProperty] = useState('');
-  const [icalLoading, setIcalLoading] = useState(false);
-  const [icalError, setIcalError] = useState('');
 
   const processFiles = useCallback(async (fileList) => {
     const newFiles = [];
@@ -58,35 +51,6 @@ export default function UploadScreen({ onDataReady }) {
 
   const removeFile = (index) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleIcalSync = async () => {
-    if (!icalUrl.trim() || !icalProperty.trim()) {
-      setIcalError('Please enter both a URL and property name');
-      return;
-    }
-    setIcalLoading(true);
-    setIcalError('');
-    try {
-      const icsText = await fetchIcal(icalUrl.trim());
-      const bookings = parseIcal(icsText, icalProperty.trim());
-      if (bookings.length === 0) {
-        setIcalError('No bookings found in iCal feed');
-        setIcalLoading(false);
-        return;
-      }
-      setFiles(prev => [...prev, {
-        name: `iCal: ${icalProperty.trim()}`,
-        propertyName: icalProperty.trim(),
-        bookingCount: bookings.length,
-        bookings,
-      }]);
-      setIcalUrl('');
-      setIcalProperty('');
-    } catch (err) {
-      setIcalError(err.message || 'Failed to fetch iCal feed');
-    }
-    setIcalLoading(false);
   };
 
   const handleViewDashboard = () => {
