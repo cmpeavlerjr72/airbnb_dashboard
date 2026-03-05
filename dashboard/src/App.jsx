@@ -5,6 +5,7 @@ import BookingTimeline from './components/BookingTimeline';
 import BookingTable from './components/BookingTable';
 import PropertyBreakdown from './components/PropertyBreakdown';
 import OccupancyRates from './components/OccupancyRates';
+import RevenueProjector from './components/RevenueProjector';
 import UploadScreen from './components/UploadScreen';
 import './App.css';
 
@@ -68,6 +69,7 @@ function App() {
       </div>
 
       <OccupancyRates bookings={filtered} />
+      <RevenueProjector bookings={filtered} />
       <BookingTimeline bookings={filtered} />
       <BookingTable bookings={filtered} />
     </div>
