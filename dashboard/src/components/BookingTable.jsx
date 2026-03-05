@@ -35,8 +35,8 @@ export default function BookingTable({ bookings }) {
           {sorted.map(b => (
             <tr key={b.confirmationCode}>
               <td>
-                <span className={`property-tag ${b.property.toLowerCase()}`}>
-                  {b.property === 'Bolton' ? 'Bolton' : 'Vickery'}
+                <span className="property-tag" style={{ background: `${b.property === bookings[0]?.property ? '#fff1f2' : '#f0fdf9'}`, color: `${b.property === bookings[0]?.property ? '#ff5a5f' : '#00a699'}` }}>
+                  {b.property}
                 </span>
               </td>
               <td>{b.guest}</td>

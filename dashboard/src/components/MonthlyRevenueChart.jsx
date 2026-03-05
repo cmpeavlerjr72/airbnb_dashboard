@@ -2,24 +2,29 @@ import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const COLORS = ['#ff5a5f', '#00a699', '#4a90d9', '#f5a623', '#7b61ff', '#e86c8d'];
 
 const fmt = (n) => `$${Math.round(n).toLocaleString()}`;
 
 export default function MonthlyRevenueChart({ bookings, showBoth }) {
+  const properties = useMemo(() => [...new Set(bookings.map(b => b.property))], [bookings]);
+
   const data = useMemo(() => {
     const byMonth = {};
     MONTHS.forEach((m, i) => {
-      byMonth[i] = { month: m, Bolton: 0, Vickery: 0, total: 0 };
+      const entry = { month: m, total: 0 };
+      properties.forEach(p => { entry[p] = 0; });
+      byMonth[i] = entry;
     });
 
     bookings.forEach(b => {
       const monthIdx = new Date(b.startDate).getMonth();
-      byMonth[monthIdx][b.property] += b.grossEarnings;
+      byMonth[monthIdx][b.property] = (byMonth[monthIdx][b.property] || 0) + b.grossEarnings;
       byMonth[monthIdx].total += b.grossEarnings;
     });
 
     return Object.values(byMonth).filter(d => d.total > 0);
-  }, [bookings]);
+  }, [bookings, properties]);
 
   return (
     <div className="chart-card">
@@ -30,14 +35,15 @@ export default function MonthlyRevenueChart({ bookings, showBoth }) {
           <XAxis dataKey="month" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} tickFormatter={fmt} />
           <Tooltip formatter={(val) => fmt(val)} />
-          {showBoth ? (
+          {showBoth && properties.length > 1 ? (
             <>
               <Legend />
-              <Bar dataKey="Bolton" fill="#ff5a5f" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Vickery" fill="#00a699" radius={[4, 4, 0, 0]} />
+              {properties.map((p, i) => (
+                <Bar key={p} dataKey={p} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
+              ))}
             </>
           ) : (
-            <Bar dataKey="total" name="Earnings" fill={bookings[0]?.property === 'Bolton' ? '#ff5a5f' : '#00a699'} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="total" name="Earnings" fill={COLORS[properties.indexOf(bookings[0]?.property)] || COLORS[0]} radius={[4, 4, 0, 0]} />
           )}
         </BarChart>
       </ResponsiveContainer>

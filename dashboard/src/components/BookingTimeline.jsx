@@ -1,9 +1,14 @@
 import { useMemo } from 'react';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const COLORS = ['#ff5a5f', '#00a699', '#4a90d9', '#f5a623', '#7b61ff', '#e86c8d'];
 const fmt = (n) => `$${Math.round(n).toLocaleString()}`;
 
 export default function BookingTimeline({ bookings }) {
+  const propertyColors = useMemo(() => {
+    const props = [...new Set(bookings.map(b => b.property))];
+    return Object.fromEntries(props.map((p, i) => [p, COLORS[i % COLORS.length]]));
+  }, [bookings]);
   const grouped = useMemo(() => {
     const byMonth = {};
     bookings.forEach(b => {
@@ -37,7 +42,8 @@ export default function BookingTimeline({ bookings }) {
               {items.map(b => (
                 <div
                   key={b.confirmationCode}
-                  className={`timeline-bar ${b.property.toLowerCase()}`}
+                  className="timeline-bar"
+                  style={{ background: propertyColors[b.property] || COLORS[0] }}
                   title={`${b.guest} | ${formatDate(b.startDate)}-${formatDate(b.endDate)} | ${b.nights}n | ${fmt(b.grossEarnings)}`}
                 >
                   <span>{b.guest} ({formatDate(b.startDate)}–{formatDate(b.endDate)}, {b.nights}n)</span>
