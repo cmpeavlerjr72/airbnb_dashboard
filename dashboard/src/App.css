@@ -423,6 +423,16 @@
   color: #9ca3af;
 }
 
+.drop-zone-compact {
+  padding: 20px 24px;
+}
+
+.drop-zone-compact .drop-text {
+  margin-bottom: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
 .file-list {
   margin-top: 20px;
   display: flex;
@@ -522,6 +532,87 @@
 
 .upload-new-btn {
   margin-left: 8px;
+}
+
+/* iCal Sync */
+.ical-section {
+  margin-top: 28px;
+}
+
+.ical-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.ical-divider::before,
+.ical-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #d1d5db;
+}
+
+.ical-form {
+  display: flex;
+  gap: 8px;
+}
+
+.ical-input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+  background: white;
+}
+
+.ical-input.ical-property {
+  flex: 0 0 140px;
+}
+
+.ical-input:focus {
+  outline: none;
+  border-color: #ff5a5f;
+}
+
+.ical-sync-btn {
+  padding: 10px 20px;
+  background: #1a1a2e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.ical-sync-btn:hover {
+  background: #2d2d4e;
+}
+
+.ical-sync-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.ical-error {
+  color: #ef4444;
+  font-size: 13px;
+  margin-top: 8px;
+  text-align: left;
+}
+
+.ical-hint {
+  color: #9ca3af;
+  font-size: 12px;
+  margin-top: 8px;
 }
 
 /* Responsive */

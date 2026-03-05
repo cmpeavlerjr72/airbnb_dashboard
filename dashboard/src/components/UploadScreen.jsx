@@ -1,10 +1,17 @@
 import { useState, useCallback, useRef } from 'react';
 import { parseCsv, guessPropertyName } from '../utils/parseCsv';
+import { fetchIcal, parseIcal } from '../utils/parseIcal';
 
 export default function UploadScreen({ onDataReady }) {
   const [files, setFiles] = useState([]); // [{ name, propertyName, bookingCount, bookings }]
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef();
+
+  // iCal state
+  const [icalUrl, setIcalUrl] = useState('');
+  const [icalProperty, setIcalProperty] = useState('');
+  const [icalLoading, setIcalLoading] = useState(false);
+  const [icalError, setIcalError] = useState('');
 
   const processFiles = useCallback(async (fileList) => {
     const newFiles = [];
@@ -53,6 +60,35 @@ export default function UploadScreen({ onDataReady }) {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleIcalSync = async () => {
+    if (!icalUrl.trim() || !icalProperty.trim()) {
+      setIcalError('Please enter both a URL and property name');
+      return;
+    }
+    setIcalLoading(true);
+    setIcalError('');
+    try {
+      const icsText = await fetchIcal(icalUrl.trim());
+      const bookings = parseIcal(icsText, icalProperty.trim());
+      if (bookings.length === 0) {
+        setIcalError('No bookings found in iCal feed');
+        setIcalLoading(false);
+        return;
+      }
+      setFiles(prev => [...prev, {
+        name: `iCal: ${icalProperty.trim()}`,
+        propertyName: icalProperty.trim(),
+        bookingCount: bookings.length,
+        bookings,
+      }]);
+      setIcalUrl('');
+      setIcalProperty('');
+    } catch (err) {
+      setIcalError(err.message || 'Failed to fetch iCal feed');
+    }
+    setIcalLoading(false);
+  };
+
   const handleViewDashboard = () => {
     const allBookings = files.flatMap(f => f.bookings);
     onDataReady(allBookings);
@@ -69,7 +105,7 @@ export default function UploadScreen({ onDataReady }) {
         </p>
 
         <div
-          className={`drop-zone ${dragOver ? 'drag-over' : ''}`}
+          className={`drop-zone ${dragOver ? 'drag-over' : ''} ${files.length > 0 ? 'drop-zone-compact' : ''}`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -83,16 +119,58 @@ export default function UploadScreen({ onDataReady }) {
             onChange={handleFileInput}
             style={{ display: 'none' }}
           />
-          <div className="drop-icon">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-          </div>
-          <p className="drop-text">Drag & drop CSV files here</p>
-          <p className="drop-hint">or click to browse</p>
+          {files.length === 0 ? (
+            <>
+              <div className="drop-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="17 8 12 3 7 8" />
+                  <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+              </div>
+              <p className="drop-text">Drag & drop CSV files here</p>
+              <p className="drop-hint">or click to browse</p>
+            </>
+          ) : (
+            <p className="drop-text">+ Add another CSV file</p>
+          )}
         </div>
+
+        {/* iCal sync – hidden until backend proxy is ready
+        <div className="ical-section">
+          <div className="ical-divider">
+            <span>or sync via iCal</span>
+          </div>
+          <div className="ical-form">
+            <input
+              type="text"
+              className="ical-input"
+              placeholder="Paste Airbnb iCal URL"
+              value={icalUrl}
+              onChange={(e) => setIcalUrl(e.target.value)}
+            />
+            <input
+              type="text"
+              className="ical-input ical-property"
+              placeholder="Property name"
+              value={icalProperty}
+              onChange={(e) => setIcalProperty(e.target.value)}
+            />
+            <button
+              className="ical-sync-btn"
+              onClick={handleIcalSync}
+              disabled={icalLoading}
+            >
+              {icalLoading ? 'Syncing...' : 'Sync'}
+            </button>
+          </div>
+          {icalError && <p className="ical-error">{icalError}</p>}
+          <p className="ical-hint">
+            Find this under Listing &rarr; Availability &rarr; Calendar sync in Airbnb.
+            iCal provides dates only (no revenue data).
+          </p>
+        </div>
+        */}
 
         {files.length > 0 && (
           <div className="file-list">
