@@ -22,6 +22,10 @@ function nightsInMonth(startDate, endDate, year, month) {
   return Math.round((overlapEnd - overlapStart) / (1000 * 60 * 60 * 24));
 }
 
+function totalBookingNights(b) {
+  return Math.round((parseLocal(b.endDate) - parseLocal(b.startDate)) / (1000 * 60 * 60 * 24));
+}
+
 export default function RevenueProjector({ bookings }) {
   const [occupancy, setOccupancy] = useState(75);
   const [selectedMonth, setSelectedMonth] = useState(null);
@@ -49,23 +53,55 @@ export default function RevenueProjector({ bookings }) {
   const projection = useMemo(() => {
     if (!activeMonth) return null;
     const { year, month } = activeMonth;
-    let totalEarnings = 0;
-    let totalNights = 0;
-
-    bookings.forEach(b => {
-      const nights = nightsInMonth(b.startDate, b.endDate, year, month);
-      if (nights > 0) {
-        totalEarnings += b.grossEarnings * (nights / Math.round((parseLocal(b.endDate) - parseLocal(b.startDate)) / (1000 * 60 * 60 * 24)));
-        totalNights += nights;
-      }
-    });
-
     const daysInMonth = getDaysInMonth(year, month);
-    const avgNightlyRate = totalNights > 0 ? totalEarnings / totalNights : 0;
-    const projectedNights = Math.round(daysInMonth * (occupancy / 100));
-    const projectedRevenue = avgNightlyRate * projectedNights;
+    const properties = [...new Set(bookings.map(b => b.property))];
 
-    return { avgNightlyRate, actualNights: totalNights, daysInMonth, projectedNights, projectedRevenue };
+    // Calculate per-property
+    const perProperty = properties.map(prop => {
+      const propBookings = bookings.filter(b => b.property === prop);
+      let earnings = 0;
+      let nights = 0;
+
+      propBookings.forEach(b => {
+        const n = nightsInMonth(b.startDate, b.endDate, year, month);
+        if (n > 0) {
+          earnings += b.grossEarnings * (n / totalBookingNights(b));
+          nights += n;
+        }
+      });
+
+      const avgRate = nights > 0 ? earnings / nights : 0;
+      const projNights = Math.round(daysInMonth * (occupancy / 100));
+      const projRevenue = avgRate * projNights;
+
+      return {
+        property: prop,
+        avgNightlyRate: avgRate,
+        actualNights: nights,
+        projectedNights: projNights,
+        projectedRevenue: projRevenue,
+      };
+    }).filter(p => p.actualNights > 0);
+
+    const numProperties = perProperty.length || 1;
+    const totalAvailableNights = daysInMonth * numProperties;
+    const totalActualNights = perProperty.reduce((s, p) => s + p.actualNights, 0);
+    const totalProjectedNights = perProperty.reduce((s, p) => s + p.projectedNights, 0);
+    const totalProjectedRevenue = perProperty.reduce((s, p) => s + p.projectedRevenue, 0);
+    const combinedAvgRate = totalActualNights > 0
+      ? perProperty.reduce((s, p) => s + p.avgNightlyRate * p.actualNights, 0) / totalActualNights
+      : 0;
+
+    return {
+      daysInMonth,
+      totalAvailableNights,
+      totalActualNights,
+      totalProjectedNights,
+      totalProjectedRevenue,
+      combinedAvgRate,
+      perProperty,
+      multiProperty: perProperty.length > 1,
+    };
   }, [bookings, activeMonth, occupancy]);
 
   if (months.length === 0) return null;
@@ -103,24 +139,40 @@ export default function RevenueProjector({ bookings }) {
         />
       </div>
       {projection && (
-        <div className="projector-results">
-          <div className="projector-result">
-            <span className="projector-result-label">Avg Nightly Rate</span>
-            <span className="projector-result-value">{fmt(projection.avgNightlyRate)}</span>
+        <>
+          {projection.multiProperty && (
+            <div className="projector-breakdown">
+              {projection.perProperty.map(p => (
+                <div key={p.property} className="projector-breakdown-row">
+                  <span className="projector-breakdown-name">{p.property}</span>
+                  <span className="projector-breakdown-detail">
+                    {fmt(p.avgNightlyRate)}/night &middot; {p.actualNights} booked &middot; {fmt(p.projectedRevenue)} projected
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="projector-results">
+            <div className="projector-result">
+              <span className="projector-result-label">
+                {projection.multiProperty ? 'Weighted Avg Rate' : 'Avg Nightly Rate'}
+              </span>
+              <span className="projector-result-value">{fmt(projection.combinedAvgRate)}</span>
+            </div>
+            <div className="projector-result">
+              <span className="projector-result-label">Actual Booked Nights</span>
+              <span className="projector-result-value">{projection.totalActualNights} / {projection.totalAvailableNights}</span>
+            </div>
+            <div className="projector-result">
+              <span className="projector-result-label">Projected Nights</span>
+              <span className="projector-result-value">{projection.totalProjectedNights} / {projection.totalAvailableNights}</span>
+            </div>
+            <div className="projector-result highlight">
+              <span className="projector-result-label">Projected Revenue</span>
+              <span className="projector-result-value">{fmt(projection.totalProjectedRevenue)}</span>
+            </div>
           </div>
-          <div className="projector-result">
-            <span className="projector-result-label">Actual Booked Nights</span>
-            <span className="projector-result-value">{projection.actualNights} / {projection.daysInMonth}</span>
-          </div>
-          <div className="projector-result">
-            <span className="projector-result-label">Projected Nights</span>
-            <span className="projector-result-value">{projection.projectedNights} / {projection.daysInMonth}</span>
-          </div>
-          <div className="projector-result highlight">
-            <span className="projector-result-label">Projected Revenue</span>
-            <span className="projector-result-value">{fmt(projection.projectedRevenue)}</span>
-          </div>
-        </div>
+        </>
       )}
     </div>
   );

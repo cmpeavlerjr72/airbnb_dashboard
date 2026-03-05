@@ -440,6 +440,32 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+.projector-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #f9fafb;
+  border-radius: 10px;
+}
+
+.projector-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.projector-breakdown-name {
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.projector-breakdown-detail {
+  color: #6b7280;
+}
+
 .projector-results {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
