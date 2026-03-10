@@ -3,3 +3,6 @@ node_modules/
 dist/
 .env
 screenshots/
+tmp_*.html
+extract_calendar.js
+.claude/settings.local.json

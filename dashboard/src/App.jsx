@@ -7,10 +7,12 @@ import PropertyBreakdown from './components/PropertyBreakdown';
 import OccupancyRates from './components/OccupancyRates';
 import RevenueProjector from './components/RevenueProjector';
 import UploadScreen from './components/UploadScreen';
+import KPIDashboard from './components/kpi/KPIDashboard';
 import './App.css';
 
 function App() {
   const [bookings, setBookings] = useState([]);
+  const [kpiData, setKpiData] = useState(null);
   const [propertyFilter, setPropertyFilter] = useState('All');
 
   const properties = useMemo(() => {
@@ -27,15 +29,27 @@ function App() {
     setPropertyFilter('All');
   };
 
+  const handleKpiDataReady = (data) => {
+    setKpiData(data);
+  };
+
   const handleReset = () => {
     setBookings([]);
+    setKpiData(null);
     setPropertyFilter('All');
   };
 
-  if (bookings.length === 0) {
-    return <UploadScreen onDataReady={handleDataReady} />;
+  // KPI Dashboard mode
+  if (kpiData) {
+    return <KPIDashboard data={kpiData} onReset={handleReset} />;
   }
 
+  // Upload screen
+  if (bookings.length === 0) {
+    return <UploadScreen onDataReady={handleDataReady} onKpiDataReady={handleKpiDataReady} />;
+  }
+
+  // Booking dashboard mode
   return (
     <div className="app">
       <header className="header">

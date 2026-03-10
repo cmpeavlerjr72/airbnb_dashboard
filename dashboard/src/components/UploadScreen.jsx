@@ -1,12 +1,28 @@
 import { useState, useCallback, useRef } from 'react';
 import { parseCsv, guessPropertyName } from '../utils/parseCsv';
+import { parseKpiExcel } from '../utils/parseKpiExcel';
 
-export default function UploadScreen({ onDataReady }) {
+export default function UploadScreen({ onDataReady, onKpiDataReady }) {
   const [files, setFiles] = useState([]); // [{ name, propertyName, bookingCount, bookings }]
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef();
 
   const processFiles = useCallback(async (fileList) => {
+    for (const file of fileList) {
+      // Handle Excel files for KPI dashboard
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const kpiData = parseKpiExcel(arrayBuffer);
+          onKpiDataReady(kpiData);
+          return;
+        } catch (err) {
+          alert(`Error parsing Excel file: ${err.message}`);
+          return;
+        }
+      }
+    }
+    // Handle CSV files for booking dashboard
     const newFiles = [];
     for (const file of fileList) {
       if (!file.name.endsWith('.csv')) continue;
@@ -21,7 +37,7 @@ export default function UploadScreen({ onDataReady }) {
       });
     }
     setFiles(prev => [...prev, ...newFiles]);
-  }, []);
+  }, [onKpiDataReady]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault();
@@ -65,7 +81,7 @@ export default function UploadScreen({ onDataReady }) {
       <div className="upload-container">
         <h1 className="upload-title">Airbnb Dashboard</h1>
         <p className="upload-subtitle">
-          Upload your Airbnb CSV export files to view your booking analytics
+          Upload CSV files for booking analytics, or an Excel file (.xlsx) for KPI dashboards
         </p>
 
         <div
@@ -78,7 +94,7 @@ export default function UploadScreen({ onDataReady }) {
           <input
             ref={inputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             multiple
             onChange={handleFileInput}
             style={{ display: 'none' }}
@@ -92,7 +108,7 @@ export default function UploadScreen({ onDataReady }) {
                   <line x1="12" y1="3" x2="12" y2="15" />
                 </svg>
               </div>
-              <p className="drop-text">Drag & drop CSV files here</p>
+              <p className="drop-text">Drag & drop CSV or Excel files here</p>
               <p className="drop-hint">or click to browse</p>
             </>
           ) : (
